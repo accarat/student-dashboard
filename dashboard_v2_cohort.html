@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard นักศึกษา · แยกรหัส/ชั้นปี</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#dde8f7;font-family:'Sarabun',sans-serif;padding:14px;min-height:100vh;}
+.wrap{max-width:1060px;margin:0 auto;}
+
+/* Header */
+.hdr{background:linear-gradient(100deg,#0d2d8a 0%,#1d56d8 60%,#2575fc 100%);border-radius:14px;padding:14px 22px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.hdr h1{color:#fff;font-size:20px;font-weight:800;}
+.hdr h1 span{color:#ffd54f;}
+.hdr p{color:#c5d8ff;font-size:12px;margin-top:2px;}
+.hdr-badge{background:rgba(255,255,255,.15);border-radius:8px;padding:7px 14px;text-align:center;color:#fff;font-size:11px;}
+.hdr-badge strong{display:block;font-size:14px;}
+
+/* KPI row */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;}
+.kpi{background:#fff;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 6px rgba(0,0,0,.07);}
+.kpi-icon{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;}
+.ib{background:#dbeafe;} .ir{background:#fee2e2;} .ig{background:#dcfce7;} .iy{background:#fef9c3;}
+.kpi-label{font-size:11px;color:#666;font-weight:600;line-height:1.3;}
+.kpi-sub{font-size:10px;color:#aaa;}
+.kpi-val{font-size:26px;font-weight:800;line-height:1.1;}
+.vb{color:#1d4ed8;} .vr{color:#dc2626;} .vg{color:#16a34a;} .vy{color:#ca8a04;}
+
+/* Slicer bar */
+.slicer-bar{background:#fff;border-radius:12px;padding:12px 16px;margin-bottom:12px;box-shadow:0 2px 6px rgba(0,0,0,.07);display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.slicer-label{font-size:12px;font-weight:700;color:#0d2d8a;white-space:nowrap;}
+.btn-group{display:flex;flex-wrap:wrap;gap:5px;}
+.sem-btn{font-size:12px;padding:4px 12px;border-radius:20px;border:1.5px solid #b8cfff;background:#f0f5ff;cursor:pointer;color:#0d2d8a;font-weight:600;transition:all .15s;}
+.sem-btn.on{background:#1d56d8;color:#fff;border-color:#1d56d8;}
+.sem-btn:hover:not(.on){background:#dbeafe;}
+.divider-v{width:1px;height:28px;background:#dde8f7;flex-shrink:0;}
+.view-select{font-size:12px;padding:5px 10px;border-radius:8px;border:1.5px solid #b8cfff;color:#333;background:#f0f5ff;font-family:'Sarabun',sans-serif;cursor:pointer;}
+
+/* Main cohort table card */
+.card{background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 2px 6px rgba(0,0,0,.07);margin-bottom:12px;}
+.card-title{font-size:13px;font-weight:700;color:#0d2d8a;border-bottom:2.5px solid #dde8f7;padding-bottom:6px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+.card-sub{font-size:11px;color:#999;font-weight:400;}
+
+/* Cohort stacked bar table */
+.cohort-grid{display:grid;gap:7px;}
+.cohort-row{display:grid;grid-template-columns:90px 70px 1fr 60px;align-items:center;gap:8px;}
+.cohort-header{display:grid;grid-template-columns:90px 70px 1fr 60px;gap:8px;margin-bottom:4px;}
+.cohort-header div{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.04em;}
+.c-badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;text-align:center;}
+.prog-5{background:#fee2e2;color:#991b1b;}
+.prog-4{background:#dbeafe;color:#1e40af;}
+.c-name{font-size:12px;color:#444;font-weight:600;}
+.bar-wrap{display:flex;gap:2px;align-items:center;}
+.bar-seg{height:22px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;border-radius:3px;min-width:0;overflow:hidden;white-space:nowrap;transition:width .4s;}
+.bar-seg span{padding:0 4px;}
+.c-total{font-size:13px;font-weight:700;color:#1d4ed8;text-align:right;}
+.c-zero{font-size:11px;color:#ccc;text-align:center;}
+
+/* Bottom 2 col */
+.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+
+/* Ratio badge */
+.ratio-grid-mini{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:6px;margin-top:8px;}
+.ratio-mini{background:#f7faff;border-radius:8px;padding:6px 8px;border:1px solid #dde8f7;text-align:center;}
+.ratio-mini .sem{font-size:10px;color:#888;font-weight:700;}
+.ratio-mini .val{font-size:15px;font-weight:800;color:#1d4ed8;}
+.ratio-mini .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:5px;margin-top:2px;}
+.bok{background:#dcfce7;color:#15803d;} .bwarn{background:#fef9c3;color:#a16207;} .bhigh{background:#fee2e2;color:#b91c1c;}
+
+/* Legend */
+.legend-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;}
+.leg{display:flex;align-items:center;gap:5px;font-size:12px;color:#555;}
+.leg-sq{width:12px;height:12px;border-radius:3px;flex-shrink:0;}
+
+/* Tips */
+.tips{background:linear-gradient(90deg,#0d2d8a,#1d56d8);border-radius:10px;padding:12px 18px;}
+.tips-title{color:#ffd54f;font-size:13px;font-weight:700;margin-bottom:6px;}
+.tips ul{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:2px 20px;}
+.tips li{color:#c5d8ff;font-size:12px;padding:3px 0 3px 16px;position:relative;}
+.tips li::before{content:"✅";position:absolute;left:0;font-size:11px;}
+
+@media(max-width:680px){
+  .kpi-row{grid-template-columns:1fr 1fr;}
+  .bottom-grid{grid-template-columns:1fr;}
+  .cohort-row,.cohort-header{grid-template-columns:80px 60px 1fr 50px;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- Header -->
+<div class="hdr">
+  <div>
+    <h1>📊 Dashboard: <span>นักศึกษา</span> แยกตามรหัส/ชั้นปี</h1>
+    <p>วิเคราะห์จำนวนนักศึกษาแยกรหัส 62–69 · กรองตามภาคเรียนได้ · ข้อมูล ณ 18 เม.ย. 2569</p>
+  </div>
+  <div class="hdr-badge">อัปเดตล่าสุด<strong id="curSemDisplay">1/69</strong></div>
+</div>
+
+<!-- KPI -->
+<div class="kpi-row">
+  <div class="kpi"><div class="kpi-icon ib">🎓</div><div><div class="kpi-label">นักศึกษารวม<div class="kpi-sub">(Headcount)</div></div><div class="kpi-val vb" id="kpiTotal">—</div></div></div>
+  <div class="kpi"><div class="kpi-icon ir">👨‍🏫</div><div><div class="kpi-label">อาจารย์ประจำ<div class="kpi-sub">(Faculty)</div></div><div class="kpi-val vr">6</div></div></div>
+  <div class="kpi"><div class="kpi-icon ig">📋</div><div><div class="kpi-label">สัดส่วน อ.:นศ.<div class="kpi-sub">(Ratio)</div></div><div class="kpi-val vg" id="kpiRatio">—</div></div></div>
+  <div class="kpi"><div class="kpi-icon iy">🏫</div><div><div class="kpi-label">ฝึกสอน<div class="kpi-sub">(Practicum)</div></div><div class="kpi-val vy" id="kpiPrac">—</div></div></div>
+</div>
+
+<!-- Slicer bar -->
+<div class="slicer-bar">
+  <span class="slicer-label">📅 ภาคเรียน:</span>
+  <div class="btn-group" id="semBtns"></div>
+  <div class="divider-v"></div>
+  <span class="slicer-label">📊 แสดงข้อมูล:</span>
+  <select class="view-select" id="viewSelect" onchange="render()">
+    <option value="both">ทั้ง ปกติ + เทียบโอน</option>
+    <option value="normal">เฉพาะ ปกติ (4/5 ปี)</option>
+    <option value="transfer">เฉพาะ เทียบโอน</option>
+  </select>
+</div>
+
+<!-- Cohort breakdown card -->
+<div class="card">
+  <div class="card-title">
+    <span>จำนวนนักศึกษาแยกตามรหัส/ชั้นปี <span class="card-sub" id="semTitle">(ภาคเรียน 1/69)</span></span>
+    <span id="grandTotal" style="font-size:15px;font-weight:800;color:#1d56d8;"></span>
+  </div>
+  <div class="legend-row">
+    <div class="leg"><span class="leg-sq" style="background:#1d56d8"></span>ปกติ (4/5 ปี)</div>
+    <div class="leg"><span class="leg-sq" style="background:#f59e0b"></span>เทียบโอน</div>
+    <div class="leg" style="margin-left:auto;font-size:11px;color:#aaa;">บาร์ยิ่งยาว = จำนวนมาก (scale ต่อแถว)</div>
+  </div>
+  <div class="cohort-header">
+    <div>รหัส/ชั้นปี</div>
+    <div>หลักสูตร</div>
+    <div>จำนวนนักศึกษา</div>
+    <div style="text-align:right;">รวม</div>
+  </div>
+  <div class="cohort-grid" id="cohortGrid"></div>
+</div>
+
+<!-- Bottom: chart + ratio -->
+<div class="bottom-grid">
+  <div class="card">
+    <div class="card-title">แนวโน้มรายภาคเรียน (รวมทุกรหัส)</div>
+    <div style="position:relative;width:100%;height:200px;">
+      <canvas id="trendChart" role="img" aria-label="แนวโน้มจำนวนนักศึกษารายภาคเรียน">แนวโน้ม</canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">สัดส่วนอาจารย์ต่อนักศึกษา <span class="card-sub">(เส้นประ = เกณฑ์ 1:30)</span></div>
+    <div style="position:relative;width:100%;height:120px;">
+      <canvas id="ratioChart" role="img" aria-label="สัดส่วนอาจารย์ต่อนักศึกษา">สัดส่วน</canvas>
+    </div>
+    <div class="ratio-grid-mini" id="ratioGrid"></div>
+  </div>
+</div>
+
+<!-- Cohort trend card -->
+<div class="card">
+  <div class="card-title">แนวโน้มจำนวนนักศึกษาแยกรหัส (ทุกภาคเรียน)</div>
+  <div style="position:relative;width:100%;height:220px;">
+    <canvas id="cohortTrendChart" role="img" aria-label="แนวโน้มแยกรหัส">แนวโน้มรหัส</canvas>
+  </div>
+</div>
+
+<div class="tips" style="margin-bottom:0;">
+  <div class="tips-title">💡 วิธีใช้ Dashboard</div>
+  <ul>
+    <li>คลิกปุ่มภาคเรียน เพื่อดูข้อมูลแต่ละภาค</li>
+    <li>เปลี่ยน "แสดงข้อมูล" เพื่อกรองประเภทนักศึกษา</li>
+    <li>กราฟล่างแสดงแนวโน้มแยกรายรหัสทุกภาคเรียน</li>
+    <li>สีแดง = เกินเกณฑ์ 1:30, สีเหลือง = อยู่ในเกณฑ์, สีเขียว = ต่ำกว่าเกณฑ์</li>
+  </ul>
+</div>
+
+</div>
+
+<script>
+const COHORTS = [
+  {code:62, yl:'y8 (จบแล้ว)', prog:'5ปี 2560', adv:'ชวพล',
+   normal:  {'1/67':2,'2/67':2},
+   transfer:{}},
+  {code:63, yl:'y7', prog:'5ปี 2560', adv:'กาญดิษ',
+   normal:  {'1/67':3,'2/67':3,'1/68':1,'2/68':1,'1/69':1,'2/69':1,'1/70':1},
+   transfer:{}},
+  {code:64, yl:'y6', prog:'5ปี 2560', adv:'หนึ่ง/จักเพชร',
+   normal:  {'1/67':10,'2/67':10,'1/68':10,'2/68':10,'1/69':2},
+   transfer:{'1/67':1,'2/67':1,'1/68':1,'2/68':1,'1/69':1,'2/69':1}},
+  {code:65, yl:'y5', prog:'4ปี 2565', adv:'อดิเทพ/หลง',
+   normal:  {'1/67':1,'2/67':1,'1/68':1,'2/68':1,'1/69':1,'2/69':1},
+   transfer:{'1/67':24,'2/67':1}},
+  {code:66, yl:'y4', prog:'4ปี 2565', adv:'มุทิตา/ณัฐ',
+   normal:  {'1/67':4,'2/67':4,'1/68':3,'2/68':3,'1/69':3,'2/69':3},
+   transfer:{'1/67':19,'2/67':19,'1/68':18}},
+  {code:67, yl:'y3', prog:'4ปี 2565', adv:'มด/เจ้านาย',
+   normal:  {'1/67':7,'2/67':7,'1/68':6,'2/68':6,'1/69':6,'2/69':6,'1/70':6,'2/70':6},
+   transfer:{'1/67':23,'2/67':23,'1/68':23,'2/68':23,'1/69':19}},
+  {code:68, yl:'y2', prog:'4ปี 2565', adv:'มาย/แอน',
+   normal:  {'1/68':6,'2/68':6,'1/69':4,'2/69':4,'1/70':4,'2/70':4,'1/71':4,'2/71':4},
+   transfer:{'1/68':22,'2/68':22,'1/69':21,'2/69':21,'1/70':21}},
+  {code:69, yl:'y1', prog:'4ปี 2565', adv:'—',
+   normal:  {'1/69':4,'2/69':4,'1/70':4,'2/70':4,'1/71':4,'2/71':4,'1/72':4,'2/72':4},
+   transfer:{'1/69':26,'2/69':26,'1/70':26,'2/70':26,'1/71':26}},
+];
+
+const SEMS = ['1/67','2/67','1/68','2/68','1/69','2/69','1/70','2/70','1/71','2/71','1/72','2/72','1/73','2/73'];
+const TOTALS = {'1/67':94,'2/67':71,'1/68':91,'2/68':73,'1/69':88,'2/69':67,'1/70':92,'2/70':70,'1/71':94,'2/71':68,'1/72':94,'2/72':74,'1/73':100,'2/73':80};
+const RATIOS = {'1/67':15.7,'2/67':11.8,'1/68':18.2,'2/68':14.6,'1/69':17.6,'2/69':13.4,'1/70':18.4,'2/70':14.0,'1/71':18.8,'2/71':13.6,'1/72':18.8,'2/72':14.8,'1/73':20.0,'2/73':16.0};
+const PRACTICUM = {'1/67':26,'2/67':22,'1/68':28,'2/68':33,'1/69':27,'2/69':27,'1/70':28,'2/70':32,'1/71':30,'2/71':4,'1/72':24,'2/72':4,'1/73':20,'2/73':10};
+
+const COHORT_COLORS = ['#6d28d9','#1d56d8','#0891b2','#16a34a','#b45309','#dc2626','#9333ea','#0f766e'];
+const TRANSFER_COLOR = '#f59e0b';
+const NORMAL_COLOR = '#1d56d8';
+
+let curSem = '1/69';
+let trendChart = null, ratioChart = null, cohortTrendChart = null;
+
+// Build semester buttons
+const btnsEl = document.getElementById('semBtns');
+SEMS.forEach(s => {
+  const b = document.createElement('button');
+  b.className = 'sem-btn' + (s === curSem ? ' on' : '');
+  b.textContent = s;
+  b.onclick = () => { curSem = s; document.querySelectorAll('.sem-btn').forEach(x=>x.classList.remove('on')); b.classList.add('on'); render(); };
+  btnsEl.appendChild(b);
+});
+
+function getVal(c, type, sem) { return (c[type] && c[type][sem]) ? c[type][sem] : 0; }
+
+function render() {
+  const sem = curSem;
+  const view = document.getElementById('viewSelect').value;
+  document.getElementById('semTitle').textContent = '(ภาคเรียน ' + sem + ')';
+  document.getElementById('curSemDisplay').textContent = sem;
+
+  // KPI
+  document.getElementById('kpiTotal').textContent = TOTALS[sem] || '—';
+  document.getElementById('kpiRatio').textContent = RATIOS[sem] ? '1:'+RATIOS[sem].toFixed(1) : '—';
+  document.getElementById('kpiPrac').textContent = PRACTICUM[sem] || '—';
+
+  // Cohort grid
+  const grid = document.getElementById('cohortGrid');
+  const maxVal = Math.max(...COHORTS.map(c => getVal(c,'normal',sem) + getVal(c,'transfer',sem)), 1);
+  let grandTotal = 0;
+  grid.innerHTML = COHORTS.map((c, i) => {
+    const n = getVal(c,'normal',sem);
+    const t = getVal(c,'transfer',sem);
+    let total = 0;
+    if(view==='both') total=n+t; else if(view==='normal') total=n; else total=t;
+    if(total===0 && n===0 && t===0) {
+      return `<div class="cohort-row" style="opacity:.35;">
+        <div><span style="font-size:12px;font-weight:700;color:#888;">${c.code}</span><br><span style="font-size:10px;color:#bbb;">${c.yl}</span></div>
+        <div><span class="c-badge ${c.prog.includes('5') ? 'prog-5':'prog-4'}" style="font-size:10px;">${c.prog}</span></div>
+        <div class="c-zero">ไม่มีข้อมูลในภาคนี้</div>
+        <div class="c-zero">—</div>
+      </div>`;
+    }
+    grandTotal += total;
+    const pctN = (n / maxVal) * 100;
+    const pctT = (t / maxVal) * 100;
+    let bars = '';
+    if((view==='both'||view==='normal') && n>0)
+      bars += `<div class="bar-seg" style="width:${pctN.toFixed(1)}%;background:#1d56d8;"><span>${n}</span></div>`;
+    if((view==='both'||view==='transfer') && t>0)
+      bars += `<div class="bar-seg" style="width:${pctT.toFixed(1)}%;background:#f59e0b;"><span>${t}</span></div>`;
+    return `<div class="cohort-row">
+      <div><span style="font-size:13px;font-weight:800;color:#0d2d8a;">${c.code}</span>&nbsp;<span style="font-size:11px;color:#666;">${c.yl}</span><br><span style="font-size:10px;color:#999;">${c.adv}</span></div>
+      <div><span class="c-badge ${c.prog.includes('5') ? 'prog-5':'prog-4'}">${c.prog}</span></div>
+      <div class="bar-wrap">${bars||'<span style="font-size:11px;color:#ddd;">—</span>'}</div>
+      <div class="c-total">${total}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('grandTotal').textContent = 'รวม: ' + grandTotal + ' คน';
+
+  renderCharts();
+}
+
+function renderCharts() {
+  // Trend line
+  const semLabels = SEMS.filter(s => TOTALS[s]);
+  const totVals = semLabels.map(s => TOTALS[s]);
+  if(trendChart) trendChart.destroy();
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type:'line', data:{labels:semLabels, datasets:[{
+      label:'นักศึกษา', data:totVals, borderColor:'#1d56d8',
+      backgroundColor:'rgba(29,86,216,.1)', fill:true, tension:.35,
+      pointBackgroundColor:semLabels.map(s=>s===curSem?'#dc2626':'#1d56d8'),
+      pointRadius:semLabels.map(s=>s===curSem?7:4), borderWidth:2.5
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y+' คน'}}},
+      scales:{
+        y:{min:50,max:110,ticks:{font:{size:10},color:'#888'},grid:{color:'rgba(0,0,0,.05)'}},
+        x:{ticks:{font:{size:10},color:semLabels.map(s=>s===curSem?'#dc2626':'#555'),autoSkip:false,maxRotation:45},grid:{display:false}}
+      }}
+  });
+
+  // Ratio bar
+  const ratioVals = semLabels.map(s=>RATIOS[s]);
+  if(ratioChart) ratioChart.destroy();
+  ratioChart = new Chart(document.getElementById('ratioChart'), {
+    type:'bar', data:{labels:semLabels, datasets:[
+      {label:'สัดส่วน', data:ratioVals, backgroundColor:ratioVals.map(v=>v>=20?'#dc2626':v>=15?'#f59e0b':'#16a34a'), borderRadius:4},
+      {label:'เกณฑ์', data:semLabels.map(()=>30), type:'line', borderColor:'#9ca3af', borderDash:[5,4], borderWidth:1.5, pointRadius:0, fill:false}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{y:{min:0,max:35,ticks:{font:{size:10},color:'#888'},grid:{color:'rgba(0,0,0,.05)'}},x:{ticks:{font:{size:10},color:'#888',autoSkip:false,maxRotation:45},grid:{display:false}}}}
+  });
+
+  // Ratio grid
+  document.getElementById('ratioGrid').innerHTML = semLabels.map(s=>{
+    const v=RATIOS[s]; const cls=v>=20?'bhigh':v>=15?'bwarn':'bok'; const lbl=v>=20?'เกินเกณฑ์':v>=15?'ปกติ':'ต่ำกว่าเกณฑ์';
+    return `<div class="ratio-mini" style="${s===curSem?'border:2px solid #1d56d8;':''}">
+      <div class="sem">${s}</div><div class="val">1:${v.toFixed(1)}</div>
+      <span class="badge ${cls}">${lbl}</span></div>`;
+  }).join('');
+
+  // Cohort trend (multi-line)
+  const activeCohorts = COHORTS.filter(c => SEMS.some(s=>getVal(c,'normal',s)+getVal(c,'transfer',s)>0));
+  const datasets = activeCohorts.map((c,i) => ({
+    label: c.code + ' (' + c.yl + ')',
+    data: SEMS.map(s => {
+      const n = getVal(c,'normal',s), t = getVal(c,'transfer',s);
+      return (n+t) > 0 ? n+t : null;
+    }),
+    borderColor: COHORT_COLORS[i % COHORT_COLORS.length],
+    backgroundColor: 'transparent',
+    tension: .3, borderWidth: 2, pointRadius: 3,
+    spanGaps: false
+  }));
+  if(cohortTrendChart) cohortTrendChart.destroy();
+  cohortTrendChart = new Chart(document.getElementById('cohortTrendChart'), {
+    type:'line', data:{labels:SEMS, datasets},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12,padding:10}}},
+      scales:{
+        y:{min:0,title:{display:true,text:'จำนวนนักศึกษา (คน)',font:{size:11}},ticks:{font:{size:10},color:'#888'},grid:{color:'rgba(0,0,0,.05)'}},
+        x:{ticks:{font:{size:10},color:'#555',autoSkip:false,maxRotation:45},grid:{display:false}}
+      }}
+  });
+}
+
+render();
+</script>
+</body>
+</html>
